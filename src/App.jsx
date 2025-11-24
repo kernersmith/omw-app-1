@@ -145,66 +145,77 @@ export default function OMWTracker() {
     mapInstanceRef.current.setCenter(location);
   };
 
-  const calculateRoute = async (startLocation) => {
-    if (!window.google || !destination) return;
+ const calculateRoute = async (startLocation) => {
+  if (!window.google || !destination) return;
 
-    if (routePolylineRef.current) {
-      routePolylineRef.current.setMap(null);
+  // Clear existing route
+  if (routePolylineRef.current) {
+    routePolylineRef.current.setMap(null);
+  }
+
+  try {
+    // Use Directions API for actual driving route
+    const directionsService = new window.google.maps.DirectionsService();
+    
+    const request = {
+      origin: new window.google.maps.LatLng(startLocation.lat, startLocation.lng),
+      destination: destination,
+      travelMode: window.google.maps.TravelMode.DRIVING,
+      unitSystem: window.google.maps.UnitSystem.IMPERIAL
+    };
+
+    const result = await new Promise((resolve, reject) => {
+      directionsService.route(request, (result, status) => {
+        if (status === 'OK') {
+          resolve(result);
+        } else {
+          reject(status);
+        }
+      });
+    });
+
+    // Clear old destination marker
+    if (destinationMarkerRef.current) {
+      destinationMarkerRef.current.setMap(null);
     }
 
-    try {
-      const geocoder = new window.google.maps.Geocoder();
-      const result = await new Promise((resolve, reject) => {
-        geocoder.geocode({ address: destination }, (results, status) => {
-          if (status === 'OK') {
-            resolve(results[0].geometry.location);
-          } else {
-            reject(status);
-          }
-        });
-      });
+    // Add destination marker
+    const endLocation = result.routes[0].legs[0].end_location;
+    destinationMarkerRef.current = new window.google.maps.Marker({
+      position: endLocation,
+      map: mapInstanceRef.current,
+      title: destination
+    });
 
-      if (destinationMarkerRef.current) {
-        destinationMarkerRef.current.setMap(null);
-      }
-      destinationMarkerRef.current = new window.google.maps.Marker({
-        position: result,
-        map: mapInstanceRef.current,
-        title: destination
-      });
+    // Draw the actual route path
+    const path = result.routes[0].overview_path;
+    routePolylineRef.current = new window.google.maps.Polyline({
+      path: path,
+      geodesic: true,
+      strokeColor: '#ffffff',
+      strokeOpacity: 0.8,
+      strokeWeight: 4,
+      map: mapInstanceRef.current
+    });
 
-      const routePath = [
-        new window.google.maps.LatLng(startLocation.lat, startLocation.lng),
-        result
-      ];
+    // Get distance and duration from Directions API
+    const leg = result.routes[0].legs[0];
+    const miles = leg.distance.value * 0.000621371; // Convert meters to miles
+    const minutes = Math.round(leg.duration.value / 60); // Convert seconds to minutes
 
-      routePolylineRef.current = new window.google.maps.Polyline({
-        path: routePath,
-        geodesic: true,
-        strokeColor: '#ffffff',
-        strokeOpacity: 0.8,
-        strokeWeight: 3,
-        map: mapInstanceRef.current
-      });
+    setDistance(miles);
+    setEta(minutes);
 
-      const dist = window.google.maps.geometry.spherical.computeDistanceBetween(
-        routePath[0],
-        routePath[1]
-      );
-      
-      const miles = dist * 0.000621371;
-      setDistance(miles);
-      setEta(Math.round((miles / 30) * 60));
+    // Fit map to show entire route
+    const bounds = new window.google.maps.LatLngBounds();
+    path.forEach(point => bounds.extend(point));
+    mapInstanceRef.current.fitBounds(bounds);
 
-      const bounds = new window.google.maps.LatLngBounds();
-      routePath.forEach(point => bounds.extend(point));
-      mapInstanceRef.current.fitBounds(bounds);
-
-    } catch (err) {
-      console.error('Error calculating route:', err);
-      setError('Could not calculate route. Please check address.');
-    }
-  };
+  } catch (err) {
+    console.error('Error calculating route:', err);
+    setError('Could not calculate route. Please check address.');
+  }
+};
 
   const startTracking = () => {
     if (!firstName) {
