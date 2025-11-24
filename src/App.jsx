@@ -58,24 +58,62 @@ export default function OMWTracker() {
   }, []);
 
   // Initialize Google Places Autocomplete
-  const initializeAutocomplete = () => {
-    if (!window.google || !destinationInputRef.current || autocompleteRef.current) return;
+  // Initialize Google Places Autocomplete
+const initializeAutocomplete = () => {
+  if (!window.google || !destinationInputRef.current || autocompleteRef.current) return;
 
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(
-      destinationInputRef.current,
-      {
-        types: ['address'],
-        componentRestrictions: { country: 'us' }
-      }
-    );
+  autocompleteRef.current = new window.google.maps.places.Autocomplete(
+    destinationInputRef.current,
+    {
+      types: ['address'],
+      componentRestrictions: { country: 'us' }
+    }
+  );
 
-    autocompleteRef.current.addListener('place_changed', () => {
-      const place = autocompleteRef.current.getPlace();
-      if (place.formatted_address) {
-        setDestination(place.formatted_address);
-      }
-    });
-  };
+  autocompleteRef.current.addListener('place_changed', () => {
+    const place = autocompleteRef.current.getPlace();
+    if (place.formatted_address) {
+      setDestination(place.formatted_address);
+    }
+  });
+
+  // Add custom styles for autocomplete dropdown
+  const style = document.createElement('style');
+  style.textContent = `
+    .pac-container {
+      background-color: #000000 !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 16px !important;
+      margin-top: 4px !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+    }
+    .pac-item {
+      background-color: #000000 !important;
+      color: #ffffff !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+      padding: 12px !important;
+      cursor: pointer !important;
+    }
+    .pac-item:hover {
+      background-color: rgba(255, 255, 255, 0.1) !important;
+    }
+    .pac-item-query {
+      color: #ffffff !important;
+      font-size: 14px !important;
+    }
+    .pac-matched {
+      color: #ffffff !important;
+      font-weight: 600 !important;
+    }
+    .pac-icon {
+      display: none !important;
+    }
+    .pac-item-query .pac-matched {
+      color: #4ade80 !important;
+    }
+  `;
+  document.head.appendChild(style);
+};
 
   // Initialize map when tracking starts
   useEffect(() => {
