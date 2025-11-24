@@ -15,10 +15,19 @@ export default function OMWTracker() {
   const [error, setError] = useState('');
   const [profileSaved, setProfileSaved] = useState(false);
   const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const destinationMarkerRef = useRef(null);
-  const routePolylineRef = useRef(null);
-  const currentLocationMarkerRef = useRef(null);
+const mapInstanceRef = useRef(null);
+const destinationMarkerRef = useRef(null);
+const routePolylineRef = useRef(null);
+const currentLocationMarkerRef = useRef(null);
+const autocompleteRef = useRef(null);
+const destinationInputRef = useRef(null);
+```
+
+### **Step 3: Find and replace Section 2**
+
+**Search for:**
+```
+// Load Google Maps script
 
   // Load saved profile on mount
   useEffect(() => {
@@ -38,16 +47,51 @@ export default function OMWTracker() {
   }, [firstName, profession]);
 
   // Load Google Maps script
-  useEffect(() => {
-    if (!window.google) {
-      const script = document.createElement('script');
-      const apiKey = 'AIzaSyBZJEu8eCZsq5wImZ8dhoyeXSqDYfBbR2g';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry`;
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
+ // Load Google Maps script
+useEffect(() => {
+  if (!window.google) {
+    const script = document.createElement('script');
+    const apiKey = 'AIzaSyBZJEu8eCZsq5wImZ8dhoyeXSqDYfBbR2g';
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,places`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+    
+    script.onload = () => {
+      initializeAutocomplete();
+    };
+  } else {
+    initializeAutocomplete();
+  }
+}, []);
+
+// Initialize Google Places Autocomplete
+const initializeAutocomplete = () => {
+  if (!window.google || !destinationInputRef.current || autocompleteRef.current) return;
+
+  autocompleteRef.current = new window.google.maps.places.Autocomplete(
+    destinationInputRef.current,
+    {
+      types: ['address'],
+      componentRestrictions: { country: 'us' }
     }
-  }, []);
+  );
+
+  autocompleteRef.current.addListener('place_changed', () => {
+    const place = autocompleteRef.current.getPlace();
+    if (place.formatted_address) {
+      setDestination(place.formatted_address);
+    }
+  });
+};
+```
+
+### **Step 4: Find and replace Section 3**
+
+**Search for:**
+```
+Where to?
+
 
   // Initialize map when tracking starts
   useEffect(() => {
@@ -336,18 +380,19 @@ export default function OMWTracker() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-3">
-                Where to?
-              </label>
-              <input
-                type="text"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                placeholder="Enter destination address"
-                className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-white/30 transition-colors placeholder-gray-600"
-              />
-            </div>
+           <div>
+  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-3">
+    Where to?
+  </label>
+  <input
+    ref={destinationInputRef}
+    type="text"
+    value={destination}
+    onChange={(e) => setDestination(e.target.value)}
+    placeholder="Enter destination address"
+    className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-white/30 transition-colors placeholder-gray-600"
+  />
+</div>
 
             <div>
               <label className="block text-xs text-gray-500 uppercase tracking-wider mb-3">
