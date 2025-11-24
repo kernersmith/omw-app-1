@@ -302,22 +302,59 @@ const initializeAutocomplete = () => {
   };
 
   const sendTextMessage = async () => {
-    if (!phoneNumber) {
-      setError('Please enter a phone number');
-      return;
-    }
+  if (!phoneNumber) {
+    setError('Please enter a phone number');
+    return;
+  }
 
-    try {
-      const response = await fetch('/api/send-sms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber,
-          firstName,
-          profession,
-          trackingLink: shareableLink
-        })
-      });
+  try {
+    // Calculate arrival time
+    const now = new Date();
+    const arrivalTime = new Date(now.getTime() + (eta * 60000)); // Add ETA in milliseconds
+    const timeString = arrivalTime.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+
+    const professionText = profession ? `${profession} ` : '';
+    const message = `${professionText}${firstName} ETA in ${eta} min at ${timeString} click to see map ${shareableLink}`;
+
+    const response = await fetch('/api/send-sms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phoneNumber,
+        message,
+        firstName,
+        profession,
+        trackingLink: shareableLink
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      alert('Message sent successfully! ✓');
+      setError('');
+    } else {
+      setError('Failed to send message: ' + data.error);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    // Fallback to native SMS app if API fails
+    const now = new Date();
+    const arrivalTime = new Date(now.getTime() + (eta * 60000));
+    const timeString = arrivalTime.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    });
+    const professionText = profession ? `${profession} ` : '';
+    const message = `${professionText}${firstName} ETA in ${eta} min at ${timeString} click to see map ${shareableLink}`;
+    window.location.href = `sms:${phoneNumber}?body=${encodeURIComponent(message)}`;
+  }
+};
 
       const data = await response.json();
       
