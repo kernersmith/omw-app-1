@@ -15,19 +15,12 @@ export default function OMWTracker() {
   const [error, setError] = useState('');
   const [profileSaved, setProfileSaved] = useState(false);
   const mapRef = useRef(null);
-const mapInstanceRef = useRef(null);
-const destinationMarkerRef = useRef(null);
-const routePolylineRef = useRef(null);
-const currentLocationMarkerRef = useRef(null);
-const autocompleteRef = useRef(null);
-const destinationInputRef = useRef(null);
-```
-
-### **Step 3: Find and replace Section 2**
-
-**Search for:**
-```
-// Load Google Maps script
+  const mapInstanceRef = useRef(null);
+  const destinationMarkerRef = useRef(null);
+  const routePolylineRef = useRef(null);
+  const currentLocationMarkerRef = useRef(null);
+  const autocompleteRef = useRef(null);
+  const destinationInputRef = useRef(null);
 
   // Load saved profile on mount
   useEffect(() => {
@@ -47,51 +40,42 @@ const destinationInputRef = useRef(null);
   }, [firstName, profession]);
 
   // Load Google Maps script
- // Load Google Maps script
-useEffect(() => {
-  if (!window.google) {
-    const script = document.createElement('script');
-    const apiKey = 'AIzaSyBZJEu8eCZsq5wImZ8dhoyeXSqDYfBbR2g';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,places`;
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-    
-    script.onload = () => {
+  useEffect(() => {
+    if (!window.google) {
+      const script = document.createElement('script');
+      const apiKey = 'AIzaSyBZJEu8eCZsq5wImZ8dhoyeXSqDYfBbR2g';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geometry,places`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+      
+      script.onload = () => {
+        initializeAutocomplete();
+      };
+    } else {
       initializeAutocomplete();
-    };
-  } else {
-    initializeAutocomplete();
-  }
-}, []);
-
-// Initialize Google Places Autocomplete
-const initializeAutocomplete = () => {
-  if (!window.google || !destinationInputRef.current || autocompleteRef.current) return;
-
-  autocompleteRef.current = new window.google.maps.places.Autocomplete(
-    destinationInputRef.current,
-    {
-      types: ['address'],
-      componentRestrictions: { country: 'us' }
     }
-  );
+  }, []);
 
-  autocompleteRef.current.addListener('place_changed', () => {
-    const place = autocompleteRef.current.getPlace();
-    if (place.formatted_address) {
-      setDestination(place.formatted_address);
-    }
-  });
-};
-```
+  // Initialize Google Places Autocomplete
+  const initializeAutocomplete = () => {
+    if (!window.google || !destinationInputRef.current || autocompleteRef.current) return;
 
-### **Step 4: Find and replace Section 3**
+    autocompleteRef.current = new window.google.maps.places.Autocomplete(
+      destinationInputRef.current,
+      {
+        types: ['address'],
+        componentRestrictions: { country: 'us' }
+      }
+    );
 
-**Search for:**
-```
-Where to?
-
+    autocompleteRef.current.addListener('place_changed', () => {
+      const place = autocompleteRef.current.getPlace();
+      if (place.formatted_address) {
+        setDestination(place.formatted_address);
+      }
+    });
+  };
 
   // Initialize map when tracking starts
   useEffect(() => {
@@ -189,77 +173,77 @@ Where to?
     mapInstanceRef.current.setCenter(location);
   };
 
- const calculateRoute = async (startLocation) => {
-  if (!window.google || !destination) return;
+  const calculateRoute = async (startLocation) => {
+    if (!window.google || !destination) return;
 
-  // Clear existing route
-  if (routePolylineRef.current) {
-    routePolylineRef.current.setMap(null);
-  }
-
-  try {
-    // Use Directions API for actual driving route
-    const directionsService = new window.google.maps.DirectionsService();
-    
-    const request = {
-      origin: new window.google.maps.LatLng(startLocation.lat, startLocation.lng),
-      destination: destination,
-      travelMode: window.google.maps.TravelMode.DRIVING,
-      unitSystem: window.google.maps.UnitSystem.IMPERIAL
-    };
-
-    const result = await new Promise((resolve, reject) => {
-      directionsService.route(request, (result, status) => {
-        if (status === 'OK') {
-          resolve(result);
-        } else {
-          reject(status);
-        }
-      });
-    });
-
-    // Clear old destination marker
-    if (destinationMarkerRef.current) {
-      destinationMarkerRef.current.setMap(null);
+    // Clear existing route
+    if (routePolylineRef.current) {
+      routePolylineRef.current.setMap(null);
     }
 
-    // Add destination marker
-    const endLocation = result.routes[0].legs[0].end_location;
-    destinationMarkerRef.current = new window.google.maps.Marker({
-      position: endLocation,
-      map: mapInstanceRef.current,
-      title: destination
-    });
+    try {
+      // Use Directions API for actual driving route
+      const directionsService = new window.google.maps.DirectionsService();
+      
+      const request = {
+        origin: new window.google.maps.LatLng(startLocation.lat, startLocation.lng),
+        destination: destination,
+        travelMode: window.google.maps.TravelMode.DRIVING,
+        unitSystem: window.google.maps.UnitSystem.IMPERIAL
+      };
 
-    // Draw the actual route path
-    const path = result.routes[0].overview_path;
-    routePolylineRef.current = new window.google.maps.Polyline({
-      path: path,
-      geodesic: true,
-      strokeColor: '#ffffff',
-      strokeOpacity: 0.8,
-      strokeWeight: 4,
-      map: mapInstanceRef.current
-    });
+      const result = await new Promise((resolve, reject) => {
+        directionsService.route(request, (result, status) => {
+          if (status === 'OK') {
+            resolve(result);
+          } else {
+            reject(status);
+          }
+        });
+      });
 
-    // Get distance and duration from Directions API
-    const leg = result.routes[0].legs[0];
-    const miles = leg.distance.value * 0.000621371; // Convert meters to miles
-    const minutes = Math.round(leg.duration.value / 60); // Convert seconds to minutes
+      // Clear old destination marker
+      if (destinationMarkerRef.current) {
+        destinationMarkerRef.current.setMap(null);
+      }
 
-    setDistance(miles);
-    setEta(minutes);
+      // Add destination marker
+      const endLocation = result.routes[0].legs[0].end_location;
+      destinationMarkerRef.current = new window.google.maps.Marker({
+        position: endLocation,
+        map: mapInstanceRef.current,
+        title: destination
+      });
 
-    // Fit map to show entire route
-    const bounds = new window.google.maps.LatLngBounds();
-    path.forEach(point => bounds.extend(point));
-    mapInstanceRef.current.fitBounds(bounds);
+      // Draw the actual route path
+      const path = result.routes[0].overview_path;
+      routePolylineRef.current = new window.google.maps.Polyline({
+        path: path,
+        geodesic: true,
+        strokeColor: '#ffffff',
+        strokeOpacity: 0.8,
+        strokeWeight: 4,
+        map: mapInstanceRef.current
+      });
 
-  } catch (err) {
-    console.error('Error calculating route:', err);
-    setError('Could not calculate route. Please check address.');
-  }
-};
+      // Get distance and duration from Directions API
+      const leg = result.routes[0].legs[0];
+      const miles = leg.distance.value * 0.000621371; // Convert meters to miles
+      const minutes = Math.round(leg.duration.value / 60); // Convert seconds to minutes
+
+      setDistance(miles);
+      setEta(minutes);
+
+      // Fit map to show entire route
+      const bounds = new window.google.maps.LatLngBounds();
+      path.forEach(point => bounds.extend(point));
+      mapInstanceRef.current.fitBounds(bounds);
+
+    } catch (err) {
+      console.error('Error calculating route:', err);
+      setError('Could not calculate route. Please check address.');
+    }
+  };
 
   const startTracking = () => {
     if (!firstName) {
@@ -380,19 +364,19 @@ Where to?
               </div>
             </div>
 
-           <div>
-  <label className="block text-xs text-gray-500 uppercase tracking-wider mb-3">
-    Where to?
-  </label>
-  <input
-    ref={destinationInputRef}
-    type="text"
-    value={destination}
-    onChange={(e) => setDestination(e.target.value)}
-    placeholder="Enter destination address"
-    className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-white/30 transition-colors placeholder-gray-600"
-  />
-</div>
+            <div>
+              <label className="block text-xs text-gray-500 uppercase tracking-wider mb-3">
+                Where to?
+              </label>
+              <input
+                ref={destinationInputRef}
+                type="text"
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                placeholder="Enter destination address"
+                className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-white/30 transition-colors placeholder-gray-600"
+              />
+            </div>
 
             <div>
               <label className="block text-xs text-gray-500 uppercase tracking-wider mb-3">
@@ -402,7 +386,7 @@ Where to?
                 type="tel"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="Phone number"
+                placeholder="+1 XXX XXX XXXX"
                 className="w-full px-4 py-4 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-white/30 transition-colors placeholder-gray-600"
               />
             </div>
